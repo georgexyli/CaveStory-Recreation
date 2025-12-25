@@ -19,6 +19,7 @@ class Player{
         void updateX(units::MS elapsed_time_ms, const Map& map);
         void updateY(units::MS elapsed_time_ms, const Map& map);
         void draw(Graphics& graphics) const;
+        void drawHUD(Graphics& graphics) const;
 
         void startMovingLeft();
         void startMovingRight();
@@ -31,7 +32,7 @@ class Player{
         void startJump();
         void stopJump();
         void takeDamage();
-        
+
         Rectangle damageRectangle() const;
         units::Game center_x() const { return x_ + units::kHalfTile; }
 
@@ -58,6 +59,7 @@ class Player{
         Rectangle bottomCollision(units::Game delta) const;
         Rectangle topCollision(units::Game delta) const;
 
+        bool spriteIsVisible() const;
         bool onGround() const{ return on_ground_; }
 
         units::Game x_, y_;
@@ -74,6 +76,8 @@ class Player{
         VerticalFacing vertical_facing_;
 
         std::unique_ptr<Sprite> health_bar_sprite_;
+        std::unique_ptr<Sprite> health_fill_sprite_;
+        std::unique_ptr<Sprite> three_;
         std::map<SpriteState, std::unique_ptr<Sprite>> sprites_;
 };
 

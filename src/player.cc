@@ -7,7 +7,7 @@
 
 namespace {
 const std::string kSpriteFile{"content/MyChar.pbm"};
-const std::string kHealthbarFile{"content/TextBox.pbm"};
+const std::string kTextBoxFile{"content/TextBox.pbm"};
 
 // movement constants
 const units::Accelaration kWalkingAcceleration{0.00083007812f}; 
@@ -40,6 +40,22 @@ const Rectangle kCollisionY{10, 2, 12, 30};
 
 const units::MS kInvincibleFlashTime{50};
 const units::MS kInvincibleTime{3000};
+
+// HUD Constants
+const units::Game kHealthBarX{units::tileToGame(1)};
+const units::Game kHealthBarY{units::tileToGame(2)};
+const units::Game kHealthBarSourceX{0};
+const units::Game kHealthBarSourceY{5 * units::kHalfTile};
+const units::Game kHealthBarSourceWidth{units::tileToGame(4)};
+const units::Game kHealthBarSourceHeight{units::kHalfTile};
+
+const units::Game kHealthFillX{5 * units::kHalfTile};
+const units::Game kHealthFillY{units::tileToGame(2)};
+
+const units::Game kHealthFillSourceX{0};
+const units::Game kHealthFillSourceY{3 * units::kHalfTile};
+const units::Game kHealthFillSourceWidth{5 * units::kHalfTile - 2.0f};
+const units::Game kHealthFillSourceHeight{units::kHalfTile};
 
 struct CollisionInfo{
     bool collided;
@@ -168,9 +184,18 @@ void Player::updateY(units::MS elapsed_time_ms, const Map& map){
     } 
 }
 
-void Player::draw(Graphics& graphics) const{
-    if (invincible_ && invincible_time_ / kInvincibleFlashTime % 2 == 0) return; 
-    (*sprites_.find(getSpriteState())).second -> draw(graphics, x_, y_);
+void Player::draw(Graphics& graphics) const {
+    if (spriteIsVisible()){
+        (*sprites_.find(getSpriteState())).second -> draw(graphics, x_, y_);
+    }
+}
+
+void Player::drawHUD(Graphics& graphics) const {
+    if (spriteIsVisible()){
+        health_bar_sprite_ -> draw(graphics, kHealthBarX, kHealthBarY);
+        health_fill_sprite_ -> draw(graphics, kHealthFillX, kHealthFillY);
+        three_ -> draw(graphics, units::tileToGame(2), units::tileToGame(2));
+    }
 }
 
 void Player::startMovingLeft(){
@@ -232,6 +257,30 @@ Rectangle Player::damageRectangle() const {
 }
 
 void Player::initializeSprites(Graphics& graphics){
+    health_bar_sprite_ = std::make_unique<Sprite>(
+            graphics,
+            kTextBoxFile,
+            units::gameToPixel(kHealthBarSourceX),
+            units::gameToPixel(kHealthBarSourceY),
+            units::gameToPixel(kHealthBarSourceWidth),
+            units::gameToPixel(kHealthBarSourceHeight));
+    
+    health_fill_sprite_ = std::make_unique<Sprite>(
+            graphics,
+            kTextBoxFile,
+            units::gameToPixel(kHealthFillSourceX),
+            units::gameToPixel(kHealthFillSourceY),
+            units::gameToPixel(kHealthFillSourceWidth),
+            units::gameToPixel(kHealthFillSourceHeight));
+            
+    three_ = std::make_unique<Sprite>(
+            graphics,
+            kTextBoxFile,
+            units::gameToPixel(3 * units::kHalfTile),
+            units::gameToPixel(7 * units::kHalfTile),
+            units::gameToPixel(units::kHalfTile),
+            units::gameToPixel(units::kHalfTile)); 
+
     for (int mt{static_cast<int>(MotionType::FIRST_MOTION_TYPE)}; 
             mt < static_cast<int>(MotionType::LAST_MOTION_TYPE); ++mt){
         for (int hf{static_cast<int>(HorizontalFacing::FIRST_HORIZONTAL_TYPE)};
@@ -361,4 +410,8 @@ bool Player::SpriteState::operator<(const SpriteState& other) const{
         return horizontal_facing < other.horizontal_facing;
     } 
     return vertical_facing < other.vertical_facing;
+}
+
+bool Player::spriteIsVisible() const{
+    return !(invincible_ && invincible_time_ / kInvincibleFlashTime % 2 == 0); 
 }

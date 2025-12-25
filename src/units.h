@@ -20,31 +20,31 @@ using Accelaration = float; //Game / MS / MS
 using AngularVelocity = float; // Degree / MS
 
 namespace{
-const Game kTileSize{32.0f};
+inline constexpr Game kTileSize{32.0f};
 const double kPi = atan(1) * 4;
 }
 
-inline Pixel gameToPixel(Game game){
+inline constexpr Pixel gameToPixel(Game game){
     return Pixel(round(game / 2));
 }
 
-inline Tile gameToTile(Game game){
+inline constexpr Tile gameToTile(Game game){
     return Tile(game / kTileSize);
 }
 
-inline Game tileToGame(Tile tile){
+inline constexpr Game tileToGame(Tile tile){
     return Game(tile * kTileSize);
 }
 
-inline Pixel tileToPixel(Tile tile){
+inline constexpr Pixel tileToPixel(Tile tile){
     return gameToPixel(tileToGame(tile));
 }
 
-inline double degreesToRadians(Degrees degrees){
+inline constexpr double degreesToRadians(Degrees degrees){
     return degrees * kPi / 180.0f;
 }
 
-const Game kHalfTile{tileToGame(1) / 2.0f};
+inline constexpr Game kHalfTile{tileToGame(1) / 2.0f};
 
 };
 

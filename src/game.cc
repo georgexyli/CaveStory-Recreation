@@ -109,5 +109,6 @@ void Game::draw(Graphics& graphics) const{
     bat_ -> draw(graphics);
     player_ -> draw(graphics);
     map_ -> draw(graphics);
+    player_ -> drawHUD(graphics);
     graphics.flip();
 }
