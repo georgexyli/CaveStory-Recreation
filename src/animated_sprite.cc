@@ -7,18 +7,16 @@ AnimatedSprite::AnimatedSprite(Graphics& graphics, const std::string& file_path,
         units::Frame num_frames) : Sprite{graphics, file_path, 
         source_x, source_y, 
         width, height},
-        frame_time_{1000 / fps},
+        frame_timer_{units::MS{1000 / fps}},
         num_frames_{num_frames},
-        cur_frame_{0},
-        elapsed_time_{0} 
+        cur_frame_{0}
 {
 }
 
 void AnimatedSprite::update(units::MS elapsed_time_ms) {
-    elapsed_time_ += elapsed_time_ms;
-    if (elapsed_time_ > frame_time_){
+    if (frame_timer_.expired()){
+        frame_timer_.reset();
         ++cur_frame_;
-        elapsed_time_ = 0;
         if (cur_frame_ < num_frames_){
             src_rect_.x += src_rect_.w;
         } else {

@@ -7,6 +7,7 @@
 #include "input.h"
 #include "map.h"
 #include "first_cave_bat.h"
+#include "timer.h"
 
 namespace {
 const units::FPS kFps{60};
@@ -33,11 +34,12 @@ void Game::eventLoop() {
     bat_ = std::make_unique<FirstCaveBat>(units::tileToGame(5), units::tileToGame(kScreenHeight/2), graphics);
     map_.reset(Map::createTestMap(graphics));
 
-    bool running = true;
-    units::MS last_update_time = SDL_GetTicks();
+    bool running{true};
+    units::TimePoint last_update_time{std::chrono::steady_clock::now()};
 
     while (running) {
-        const units::MS start_time_ms = SDL_GetTicks();
+        const units::TimePoint start_time_ms{std::chrono::steady_clock::now()};
+        
         input.beginNewFrame();
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -80,21 +82,24 @@ void Game::eventLoop() {
             player_ -> stopJump();
         }
 
-        const units::MS cur_time_ms = SDL_GetTicks();
-        const units::MS elapsed_time = std::min(kMaxFrameTime, cur_time_ms - last_update_time);
+        const units::TimePoint cur_time_ms{std::chrono::steady_clock::now()};
+        const units::MS elapsed_time{std::min(kMaxFrameTime, std::chrono::duration_cast<units::MS>(cur_time_ms - last_update_time))};
         update(elapsed_time);
         last_update_time = cur_time_ms;
 
         draw(graphics);
-        const units::MS elapsed_time_ms = SDL_GetTicks() - start_time_ms;
-        const units::MS ms_per_frame = 1000/kFps;
+        const units::MS elapsed_time_ms{std::chrono::duration_cast<units::MS>(std::chrono::steady_clock::now() - start_time_ms)};
+        const units::MS ms_per_frame {1000/kFps};
         if (elapsed_time_ms < ms_per_frame) {
-            SDL_Delay(ms_per_frame - elapsed_time_ms);
+            const units::MS frame_time = ms_per_frame - elapsed_time_ms;
+            SDL_Delay(static_cast<Uint32>(frame_time.count()));
         }
     }
 }
 
 void Game::update(units::MS elapsed_time_ms) {
+    Timer::updateAll(elapsed_time_ms);
+
     player_ -> update(elapsed_time_ms, *map_);
     bat_ -> update(elapsed_time_ms, player_ -> center_x());
     map_ -> update(elapsed_time_ms);
@@ -105,10 +110,12 @@ void Game::update(units::MS elapsed_time_ms) {
 
 void Game::draw(Graphics& graphics) const{
     graphics.clear();
+
     map_ -> drawBackground(graphics);
     bat_ -> draw(graphics);
     player_ -> draw(graphics);
     map_ -> draw(graphics);
     player_ -> drawHUD(graphics);
+
     graphics.flip();
 }

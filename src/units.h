@@ -2,8 +2,11 @@
 #define UNITS_H_
 
 #include<cmath>
+#include <chrono>
 
 namespace units{
+
+using HP = int;
 
 using Game = float; // Float for extra precision, intrinsic units of position
 using Pixel = int; // Integer for discrete units. Pixel units can be +/-
@@ -12,7 +15,8 @@ using Frame = unsigned int; // Discrete non-negative
 using Degrees = float; 
 using Radians = float;
 
-using MS = unsigned int; // Discrete Milliseconds to match SDL
+using TimePoint = std::chrono::steady_clock::time_point; // Timepoint for measuring start and end of time intervals
+using MS = std::chrono::milliseconds; // For measuring elapsed time (difference between two timepoints)
 using FPS = unsigned int; // frames oer second (Hz or 1 / second)
 
 using Velocity = float; // Game / MS 

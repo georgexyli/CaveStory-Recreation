@@ -1,6 +1,8 @@
 #ifndef ANIMATED_SPRITE_H_
 #define ANIMATED_SPRITE_H_
 
+#include "timer.h"
+
 #include "sprite.h"
 
 class AnimatedSprite : public Sprite {
@@ -13,10 +15,9 @@ class AnimatedSprite : public Sprite {
         void update(units::MS elapsed_time_ms) override;
 
     private:
-        const units::MS frame_time_;
         const units::Frame num_frames_;
         units::Frame cur_frame_;
-        units::MS elapsed_time_;
+        Timer frame_timer_;
 };
 
 #endif // ANIMATED_SPRITE_H_

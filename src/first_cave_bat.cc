@@ -26,7 +26,7 @@ void FirstCaveBat::draw(Graphics& graphics) const{
 }
 
 void FirstCaveBat::update(units::MS elapsed_time, units::Game player_x){
-    flight_angle_ += kAngularVelocity * elapsed_time;
+    flight_angle_ += kAngularVelocity * elapsed_time.count();
     facing_ = x_ + units::kHalfTile > player_x ? 
             HorizontalFacing::LEFT : 
             HorizontalFacing::RIGHT;

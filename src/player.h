@@ -7,6 +7,9 @@
 #include "animated_sprite.h"
 #include "rectangle.h"
 #include "units.h"
+#include "number_sprite.h"
+#include "varying_width_sprite.h"
+#include "timer.h"
 
 class Graphics;
 class Map;
@@ -19,7 +22,7 @@ class Player{
         void updateX(units::MS elapsed_time_ms, const Map& map);
         void updateY(units::MS elapsed_time_ms, const Map& map);
         void draw(Graphics& graphics) const;
-        void drawHUD(Graphics& graphics) const;
+        void drawHUD(Graphics& graphics);
 
         void startMovingLeft();
         void startMovingRight();
@@ -49,6 +52,25 @@ class Player{
             bool operator<(const SpriteState& other) const;
         };
 
+        struct Health {
+            Health(Graphics& graphics);
+
+            void update(units::MS elapsed_time);
+            void draw(Graphics& graphics);
+            // returns true if we have died
+            bool takeDamage(units::HP damage);
+            private:
+                units::Game fillOffset(units::HP health) const;
+                units::HP damage_;
+                Timer damage_timer_;
+
+                units::HP max_health_;
+                units::HP current_health_;
+                Sprite health_bar_sprite_;
+                VaryingWidthSprite health_fill_sprite_;
+                VaryingWidthSprite damage_fill_sprite_;
+        };
+
         void initializeSprites(Graphics& graphics);
         void initializeSprite(Graphics& graphics, const SpriteState& sprite);
         SpriteState getSpriteState() const;
@@ -69,15 +91,12 @@ class Player{
         bool jump_active_;
         bool interacting_;
 
-        units::MS invincible_time_;
-        bool invincible_;
+        Health health_;
+        Timer invincible_timer_;
 
         HorizontalFacing horizontal_facing_;
         VerticalFacing vertical_facing_;
 
-        std::unique_ptr<Sprite> health_bar_sprite_;
-        std::unique_ptr<Sprite> health_fill_sprite_;
-        std::unique_ptr<Sprite> three_;
         std::map<SpriteState, std::unique_ptr<Sprite>> sprites_;
 };
 
