@@ -13,7 +13,7 @@ AnimatedSprite::AnimatedSprite(Graphics& graphics, const std::string& file_path,
 {
 }
 
-void AnimatedSprite::update(units::MS elapsed_time_ms) {
+void AnimatedSprite::update() {
     if (frame_timer_.expired()){
         frame_timer_.reset();
         ++cur_frame_;

@@ -76,11 +76,18 @@ void Game::eventLoop() {
             player_ -> lookHorizontal();
         }
 
-        if (input.wasKeyPressed(SDL_SCANCODE_SPACE)){
+        if (input.wasKeyPressed(SDL_SCANCODE_Z)){
             player_ -> startJump();
-        } else if (input.wasKeyReleased(SDL_SCANCODE_SPACE)){
+        } else if (input.wasKeyReleased(SDL_SCANCODE_Z)){
             player_ -> stopJump();
         }
+
+        if (input.wasKeyPressed(SDL_SCANCODE_X)){
+            player_ -> startFire();
+        } else if (input.wasKeyReleased(SDL_SCANCODE_X)){
+            player_ -> stopFire();
+        }
+
 
         const units::TimePoint cur_time_ms{std::chrono::steady_clock::now()};
         const units::MS elapsed_time{std::min(kMaxFrameTime, std::chrono::duration_cast<units::MS>(cur_time_ms - last_update_time))};
@@ -102,7 +109,6 @@ void Game::update(units::MS elapsed_time_ms) {
 
     player_ -> update(elapsed_time_ms, *map_);
     bat_ -> update(elapsed_time_ms, player_ -> center_x());
-    map_ -> update(elapsed_time_ms);
     if (bat_ -> damageRectangle().collidesWidth(player_ -> damageRectangle())){
         player_ -> takeDamage(bat_ -> contactDamage());
     }

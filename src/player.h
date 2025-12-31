@@ -36,6 +36,10 @@ class Player{
 
         void startJump();
         void stopJump();
+
+        void startFire();
+        void stopFire();
+
         void takeDamage(units::HP damage);
 
         Rectangle damageRectangle() const;
@@ -106,6 +110,9 @@ class Player{
 
         bool spriteIsVisible() const;
         MotionType motionType() const;
+        bool gun_up() const {
+            return motionType() == MotionType::WALKING && (walking_animation_.stride() != StrideType::MIDDLE);
+        }
         VerticalFacing vertical_facing() const 
             { return on_ground_ && intended_vertical_facing_ 
                     == VerticalFacing::DOWN ?

@@ -49,7 +49,7 @@ struct CollisionInfo{
 CollisionInfo getWallCollisionInfo(const Map& map, const Rectangle& rectangle){
     CollisionInfo info{false, 0, 0};
     std::vector<Map::CollisionTile> tiles{map.getCollidingTiles(rectangle)};
-    for (auto& tile: tiles){
+    for (const auto& tile: tiles){
         if (tile.tile_type == Map::TileType::WALL_TILE){
             info = {true, tile.row, tile.col};
             break;
@@ -76,11 +76,14 @@ Player::Player(units::Game x, units::Game y, Graphics& graphics) : x_{x}, y_{y},
 }
 
 void Player::update(units::MS elapsed_time_ms, const Map& map){
-    sprites_[getSpriteState()] -> update(elapsed_time_ms);
+    sprites_[getSpriteState()] -> update();
 
     health_.update(elapsed_time_ms);
     damage_text_.update(elapsed_time_ms);
     walking_animation_.update();
+
+    polar_star_.updateProjectiles(elapsed_time_ms, map);
+
     updateX(elapsed_time_ms, map);
     updateY(elapsed_time_ms, map);
 }
@@ -173,8 +176,7 @@ void Player::updateY(units::MS elapsed_time_ms, const Map& map){
 
 void Player::draw(Graphics& graphics) {
     if (spriteIsVisible()){
-        const bool gun_up = motionType() == MotionType::WALKING && (walking_animation_.stride() != StrideType::MIDDLE);
-        polar_star_.draw(graphics, x_, y_, horizontal_facing_, vertical_facing(), gun_up);
+        polar_star_.draw(graphics, x_, y_, horizontal_facing_, vertical_facing(), gun_up());
         (*sprites_.find(getSpriteState())).second -> draw(graphics, x_, y_);
     }
 }
@@ -218,6 +220,14 @@ void Player::lookDown(){
 
 void Player::lookHorizontal(){
     intended_vertical_facing_ = VerticalFacing::HORIZONTAL;
+}
+
+void Player::startFire(){
+    polar_star_.startFire(x_, y_, horizontal_facing_, vertical_facing(), gun_up());
+}
+
+void Player::stopFire(){
+    polar_star_.stopFire();
 }
 
 void Player::stopJump(){
@@ -351,34 +361,34 @@ Player::SpriteState Player::getSpriteState() const{
 
 Rectangle Player::leftCollision(units::Game delta) const {
     assert(delta <= 0);
-    return Rectangle(x_ + kCollisionX.left() + delta,
+    return Rectangle{x_ + kCollisionX.left() + delta,
             y_ + kCollisionX.top(),
             kCollisionX.width() / 2 - delta,
-            kCollisionX.height());
+            kCollisionX.height()};
 }
 
 Rectangle Player::rightCollision(units::Game delta) const {
     assert(delta >= 0);
-    return Rectangle(x_ + kCollisionX.left() + kCollisionX.width() / 2,
+    return Rectangle{x_ + kCollisionX.left() + kCollisionX.width() / 2,
             y_ + kCollisionX.top(),
             kCollisionX.width() / 2 + delta,
-            kCollisionX.height());
+            kCollisionX.height()};
 }
 
 Rectangle Player::topCollision(units::Game delta) const {
     assert(delta <= 0);
-    return Rectangle(x_ + kCollisionY.left(),
+    return Rectangle{x_ + kCollisionY.left(),
             y_ + kCollisionY.top() + delta,
             kCollisionY.width(),
-            kCollisionY.height() / 2 - delta);
+            kCollisionY.height() / 2 - delta};
 }
 
 Rectangle Player::bottomCollision(units::Game delta) const {
     assert(delta >= 0);
-    return Rectangle(x_ + kCollisionY.left(),
+    return Rectangle{x_ + kCollisionY.left(),
             y_ + kCollisionY.top() + kCollisionY.height() / 2,
             kCollisionY.width(),
-            kCollisionY.height() / 2 + delta);
+            kCollisionY.height() / 2 + delta};
 }
 
 bool Player::spriteIsVisible() const{

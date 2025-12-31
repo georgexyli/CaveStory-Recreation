@@ -12,7 +12,7 @@ class AnimatedSprite : public Sprite {
                 units::Pixel height, units::FPS fps, units::Frame num_frames);
 
                 
-        void update(units::MS elapsed_time_ms) override;
+        void update() override;
 
     private:
         const units::Frame num_frames_;

@@ -86,16 +86,6 @@ std::vector<Map::CollisionTile> Map::getCollidingTiles(const Rectangle& rectangl
     return collisionTiles;
 }
 
-void Map::update(units::MS elapsed_time_ms) {
-    for (auto& row : tiles_){
-        for (auto& tile : row){
-            if (tile.sprite) {
-                tile.sprite -> update(elapsed_time_ms);
-            }
-        }
-    }
-}
-
 void Map::draw(Graphics& graphics) const {
     for (units::Tile row{}; row < tiles_.size(); ++row){
         for (units::Tile col{}; col < tiles_[row].size(); ++col){

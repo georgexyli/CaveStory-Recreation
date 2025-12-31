@@ -15,7 +15,7 @@ class Sprite {
 
         virtual ~Sprite() = default;
 
-        virtual void update(units::MS /* elapsed_time_ms */) {}
+        virtual void update() {}
         void draw(Graphics& graphics, units::Game x, units::Game y);
 
     private:

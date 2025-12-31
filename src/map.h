@@ -27,7 +27,6 @@ class Map {
             units::Tile col;
         };
 
-        void update(units::MS elapsed_time_ms);
         void drawBackground(Graphics & graphics) const;
         void draw(Graphics& graphics) const;
 

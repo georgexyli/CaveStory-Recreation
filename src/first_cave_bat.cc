@@ -32,7 +32,7 @@ void FirstCaveBat::update(units::MS elapsed_time, units::Game player_x){
             HorizontalFacing::LEFT : 
             HorizontalFacing::RIGHT;
     y_ = center_y_ + kFlightAmplitude * units::Game(std::sin(units::degreesToRadians(flight_angle_)));
-    sprites_[getSpriteState()] -> update(elapsed_time);
+    sprites_[getSpriteState()] -> update();
 }
 
 units::HP FirstCaveBat::contactDamage() const {
