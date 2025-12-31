@@ -32,7 +32,10 @@ void Graphics::renderTexture(SDL_Texture* texture, SDL_Rect* src_rect,
 
 void Graphics::flip() { SDL_RenderPresent(renderer_); }
 
-SDL_Texture* Graphics::loadImage(const std::string& file_path, bool black_is_transparent) {
+SDL_Texture* Graphics::loadImage(const std::string& file_name, bool black_is_transparent) {
+    const std::string file_path{ config::getGraphicsQuality() == config::GraphicsQuality::HIGH_QUALITY ?
+            "content/" + file_name + ".bmp" :
+            "content/" + file_name + ".pbm" };
     if (sprite_sheets_.contains(file_path)){
         return sprite_sheets_[file_path];
     }
@@ -42,7 +45,7 @@ SDL_Texture* Graphics::loadImage(const std::string& file_path, bool black_is_tra
                 SDL_MapRGB(temp_surface->format, 0, 0, 0));
     }
 
-    sprite_sheets_[file_path] = SDL_CreateTextureFromSurface(renderer_, temp_surface);
+    sprite_sheets_.emplace(file_path, SDL_CreateTextureFromSurface(renderer_, temp_surface));
     SDL_FreeSurface(temp_surface);
     
     return sprite_sheets_[file_path];

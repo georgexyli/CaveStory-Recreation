@@ -1,7 +1,7 @@
 #include "player.h"
 
 namespace{
-const std::string kHealthFile{"content/TextBox.pbm"};
+const std::string kHealthFile{"TextBox"};
 
 const units::Game kHealthBarX{units::tileToGame(1)};
 const units::Game kHealthBarY{units::tileToGame(2)};

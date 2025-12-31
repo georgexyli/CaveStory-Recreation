@@ -9,8 +9,8 @@
 #include <iostream>
 
 namespace {
-const std::string kSpriteFile{"content/MyChar.pbm"};
-const std::string kTextBoxFile{"content/TextBox.pbm"};
+const std::string kSpriteFile{"MyChar"};
+const std::string kTextBoxFile{"TextBox"};
 
 // movement constants
 const units::Accelaration kWalkingAcceleration{0.00083007812f}; 
@@ -24,9 +24,6 @@ const units::Accelaration kJumpGravity{0.0003125f};
 
 const units::Velocity kMaxSpeedY{0.2998046875f};
 const units::Accelaration kGravity{0.00078125f};
-
-const units::Frame kWalkFrames{3};
-const units::FPS kWalkFps{15};
 
 // character frame constants
 const units::Frame kJumpFrame{1};
@@ -68,11 +65,12 @@ Player::Player(units::Game x, units::Game y, Graphics& graphics) : x_{x}, y_{y},
         acceleration_x_{0.0f}, 
         on_ground_{false},
         horizontal_facing_{HorizontalFacing::LEFT},
-        vertical_facing_{VerticalFacing::HORIZONTAL},
+        intended_vertical_facing_{VerticalFacing::HORIZONTAL},
         jump_active_{false}, 
         interacting_{false},
         health_{graphics}, 
-        invincible_timer_{kInvincibleTime}
+        invincible_timer_{kInvincibleTime},
+        polar_star_{graphics}
 {
     initializeSprites(graphics);
 }
@@ -81,6 +79,8 @@ void Player::update(units::MS elapsed_time_ms, const Map& map){
     sprites_[getSpriteState()] -> update(elapsed_time_ms);
 
     health_.update(elapsed_time_ms);
+    damage_text_.update(elapsed_time_ms);
+    walking_animation_.update();
     updateX(elapsed_time_ms, map);
     updateY(elapsed_time_ms, map);
 }
@@ -97,7 +97,7 @@ void Player::updateX(units::MS elapsed_time_ms, const Map& map){
                 std::min(0.0f, velocity_x_ + kFriction * elapsed_time_ms.count());
     }
 
-    const units::Game delta = velocity_x_ * elapsed_time_ms.count();
+    const units::Game delta{velocity_x_ * elapsed_time_ms.count()};
 
     if (delta > 0.0f){
         CollisionInfo info{getWallCollisionInfo(map, rightCollision(delta))};
@@ -131,12 +131,12 @@ void Player::updateX(units::MS elapsed_time_ms, const Map& map){
 }
 
 void Player::updateY(units::MS elapsed_time_ms, const Map& map){
-    const units::Accelaration gravity = jump_active_ && velocity_y_ < 0.0f ?
-            kJumpGravity : kGravity;
+    const units::Accelaration gravity{jump_active_ && velocity_y_ < 0.0f ?
+            kJumpGravity : kGravity};
     velocity_y_ = std::min(velocity_y_ + gravity * elapsed_time_ms.count(),
             kMaxSpeedY);
 
-    const units::Game delta = velocity_y_ * elapsed_time_ms.count();
+    const units::Game delta{velocity_y_ * elapsed_time_ms.count()};
     if (delta > 0.0f){
         CollisionInfo info{getWallCollisionInfo(map, bottomCollision(delta))};
 
@@ -171,8 +171,10 @@ void Player::updateY(units::MS elapsed_time_ms, const Map& map){
     } 
 }
 
-void Player::draw(Graphics& graphics) const {
+void Player::draw(Graphics& graphics) {
     if (spriteIsVisible()){
+        const bool gun_up = motionType() == MotionType::WALKING && (walking_animation_.stride() != StrideType::MIDDLE);
+        polar_star_.draw(graphics, x_, y_, horizontal_facing_, vertical_facing(), gun_up);
         (*sprites_.find(getSpriteState())).second -> draw(graphics, x_, y_);
     }
 }
@@ -181,15 +183,19 @@ void Player::drawHUD(Graphics& graphics) {
     if (spriteIsVisible()){
         health_.draw(graphics);
     }
+    damage_text_.draw(graphics, center_x(), center_y());
 }
 
 void Player::startMovingLeft(){
+    if (on_ground_ && acceleration_x_ == 0) walking_animation_.reset();
+
     acceleration_x_ = on_ground_ ?  -kWalkingAcceleration : -kAirAccelerataion;
     horizontal_facing_ = HorizontalFacing::LEFT;
     interacting_ = false;
 }
 
 void Player::startMovingRight(){
+    if (on_ground_ && acceleration_x_ == 0) walking_animation_.reset();
     acceleration_x_ = on_ground_ ? kWalkingAcceleration : kAirAccelerataion;
     horizontal_facing_ = HorizontalFacing::RIGHT;
     interacting_ = false;
@@ -200,18 +206,18 @@ void Player::stopMoving(){
 }
 
 void Player::lookUp(){
-    vertical_facing_ = VerticalFacing::UP;
+    intended_vertical_facing_ = VerticalFacing::UP;
     interacting_ = false;
 }
 
 void Player::lookDown(){
-    if (vertical_facing_ == VerticalFacing::DOWN) return;
-    vertical_facing_ = VerticalFacing::DOWN;
+    if (intended_vertical_facing_ == VerticalFacing::DOWN) return;
+    intended_vertical_facing_ = VerticalFacing::DOWN;
     interacting_ = on_ground_;
 }
 
 void Player::lookHorizontal(){
-    vertical_facing_ = VerticalFacing::HORIZONTAL;
+    intended_vertical_facing_ = VerticalFacing::HORIZONTAL;
 }
 
 void Player::stopJump(){
@@ -222,14 +228,16 @@ void Player::stopJump(){
 void Player::startJump(){
     interacting_ = false;
     jump_active_ = true;
-    if (onGround()){
+    if (on_ground_){
         velocity_y_ = -kJumpSpeed;
     } 
 }
 
-void Player::takeDamage(){
+void Player::takeDamage(units::HP damage){
     if (invincible_timer_.active()) return;
-    health_.takeDamage(2);
+    health_.takeDamage(damage);
+    damage_text_.setDamage(damage);
+
     velocity_y_ = std::min(-kShortJumpSpeed, velocity_y_);
     invincible_timer_.reset();
 }
@@ -242,46 +250,28 @@ Rectangle Player::damageRectangle() const {
 }
 
 void Player::initializeSprites(Graphics& graphics){
-    // health_bar_sprite_ = std::make_unique<Sprite>(
-    //         graphics,
-    //         kTextBoxFile,
-    //         units::gameToPixel(kHealthBarSourceX),
-    //         units::gameToPixel(kHealthBarSourceY),
-    //         units::gameToPixel(kHealthBarSourceWidth),
-    //         units::gameToPixel(kHealthBarSourceHeight));
-    
-    // health_fill_sprite_ = std::make_unique<Sprite>(
-    //         graphics,
-    //         kTextBoxFile,
-    //         units::gameToPixel(kHealthFillSourceX),
-    //         units::gameToPixel(kHealthFillSourceY),
-    //         units::gameToPixel(kHealthFillSourceWidth),
-    //         units::gameToPixel(kHealthFillSourceHeight));
-            
-    // health_number_sprite_ = std::make_unique<NumberSprite>(graphics, 3, kHealthNumberDigits);
-
-    for (int mt{static_cast<int>(MotionType::FIRST_MOTION_TYPE)}; 
-            mt < static_cast<int>(MotionType::LAST_MOTION_TYPE); ++mt){
-        for (int hf{static_cast<int>(HorizontalFacing::FIRST_HORIZONTAL_TYPE)};
-                hf < static_cast<int>(HorizontalFacing::LAST_HORIZONTAL_TYPE); ++hf){
-            for (int vf{static_cast<int>(VerticalFacing::FIRST_VERTICAL_TYPE)};
-                    vf < static_cast<int>(VerticalFacing::LAST_VERTICAL_TYPE); ++vf){
-                initializeSprite(graphics, SpriteState(
-                        static_cast<MotionType>(mt), 
-                        static_cast<HorizontalFacing>(hf), 
-                        static_cast<VerticalFacing>(vf)));
+    ENUM_FOREACH(mt, MOTION_TYPE, MotionType){
+        ENUM_FOREACH(hf, HORIZONTAL_TYPE, HorizontalFacing){
+            ENUM_FOREACH(vf, VERTICAL_TYPE, VerticalFacing){
+                ENUM_FOREACH(st, STRIDE_TYPE, StrideType){
+                    initializeSprite(graphics, std::make_tuple(
+                            static_cast<MotionType>(mt), 
+                            static_cast<HorizontalFacing>(hf), 
+                            static_cast<VerticalFacing>(vf),
+                            static_cast<StrideType>(st)));
+                }
             }
         }
     }
 }
 
 void Player::initializeSprite(Graphics& graphics, const SpriteState& state){
-    units::Tile tile_y{state.horizontal_facing == HorizontalFacing::LEFT ? 
+    units::Tile tile_y{state.horizontal_facing() == HorizontalFacing::LEFT ? 
             kCharacterFrame : 
             kCharacterFrame + 1};
 
     units::Tile tile_x;
-    switch (state.motion_type){
+    switch (state.motion_type()){
         case MotionType::WALKING:
             tile_x = kWalkFrame;
             break;
@@ -300,37 +290,46 @@ void Player::initializeSprite(Graphics& graphics, const SpriteState& state){
         default:
             break;
     }
+    switch (state.vertical_facing()) {
+        case VerticalFacing::UP:
+            tile_x += kUpFrameOffset;
+            break;
+        case VerticalFacing::DOWN:
+            tile_x = kDownFrame;
+            break;
+        default:
+            break;
+    }
 
-    tile_x += state.vertical_facing == VerticalFacing::UP ? 
-            kUpFrameOffset : 0;
-
-    if (state.motion_type == MotionType::WALKING){
-        sprites_[state] = 
-                std::make_unique<AnimatedSprite>(
+    if (state.motion_type() == MotionType::WALKING){
+        switch (state.strideType()){
+            case StrideType::LEFT:
+                tile_x += 1;
+                break;
+            case StrideType::RIGHT:
+                tile_x += 2;
+                break;
+            default:
+                break;
+        }
+        sprites_.emplace(state, std::make_unique<Sprite>(
                         graphics, 
                         kSpriteFile, 
                         units::tileToPixel(tile_x), 
                         units::tileToPixel(tile_y), 
                         units::tileToPixel(1),
-                        units::tileToPixel(1),
-                        kWalkFps, kWalkFrames);
+                        units::tileToPixel(1)));
     } else {
-        if (state.vertical_facing == VerticalFacing::DOWN && 
-                (state.motion_type == MotionType::JUMPING ||
-                state.motion_type == MotionType::FALLING )){
-            tile_x = kDownFrame;
-        }
-        sprites_[state] = 
-                std::make_unique<Sprite>(graphics, kSpriteFile,
+        sprites_.emplace(state, std::make_unique<Sprite>(graphics, kSpriteFile,
                         units::tileToPixel(tile_x), 
                         units::tileToPixel(tile_y), 
                         units::tileToPixel(1),
-                        units::tileToPixel(1));
+                        units::tileToPixel(1)));
     }
 }
 
-Player::SpriteState Player::getSpriteState() const{
-    MotionType motion;
+MotionType Player::motionType() const {
+    MotionType motion;  
     if (interacting_){
         motion = MotionType::INTERACTING;
     }
@@ -339,7 +338,15 @@ Player::SpriteState Player::getSpriteState() const{
     } else{
         motion = velocity_y_ < 0.0f ? MotionType::JUMPING : MotionType::FALLING;
     }   
-    return SpriteState{motion, horizontal_facing_, vertical_facing_};
+    return motion;
+}
+
+Player::SpriteState Player::getSpriteState() const{
+    return SpriteState{std::make_tuple(
+            motionType(), 
+            horizontal_facing_, 
+            vertical_facing(), 
+            walking_animation_.stride())};
 }
 
 Rectangle Player::leftCollision(units::Game delta) const {
@@ -372,23 +379,6 @@ Rectangle Player::bottomCollision(units::Game delta) const {
             y_ + kCollisionY.top() + kCollisionY.height() / 2,
             kCollisionY.width(),
             kCollisionY.height() / 2 + delta);
-}
-
-Player::SpriteState::SpriteState(MotionType motion_type, 
-        HorizontalFacing horizontal_facing, VerticalFacing vertical_facing) : 
-        motion_type{motion_type}, horizontal_facing{horizontal_facing},
-        vertical_facing{vertical_facing}
-{
-}
-
-bool Player::SpriteState::operator<(const SpriteState& other) const{
-    if (motion_type != other.motion_type) {
-        return motion_type < other.motion_type;
-    }
-    else if (horizontal_facing != other.horizontal_facing){
-        return horizontal_facing < other.horizontal_facing;
-    } 
-    return vertical_facing < other.vertical_facing;
 }
 
 bool Player::spriteIsVisible() const{

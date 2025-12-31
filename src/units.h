@@ -3,6 +3,8 @@
 
 #include<cmath>
 #include <chrono>
+#include <numbers>
+#include "config.h"
 
 namespace units{
 
@@ -25,11 +27,13 @@ using AngularVelocity = float; // Degree / MS
 
 namespace{
 inline constexpr Game kTileSize{32.0f};
-const double kPi = atan(1) * 4;
+inline constexpr double kPi{std::numbers::pi};
 }
 
 inline constexpr Pixel gameToPixel(Game game){
-    return Pixel(round(game / 2));
+    return config::getGraphicsQuality() == config::GraphicsQuality::HIGH_QUALITY ?
+            Pixel(round(game)) :
+            Pixel(round(game / 2));
 }
 
 inline constexpr Tile gameToTile(Game game){
@@ -44,7 +48,7 @@ inline constexpr Pixel tileToPixel(Tile tile){
     return gameToPixel(tileToGame(tile));
 }
 
-inline constexpr double degreesToRadians(Degrees degrees){
+inline double degreesToRadians(Degrees degrees){
     return degrees * kPi / 180.0f;
 }
 

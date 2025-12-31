@@ -1,5 +1,13 @@
 #ifndef SPRITE_STATE_H_
 #define SPRITE_STATE_H_
+
+#include <tuple>
+
+
+#define ENUM_FOREACH(var, enum_type, enum_class) \
+    for (int var{static_cast<int>(enum_class::FIRST_##enum_type)}; \
+        var < static_cast<int>(enum_class::LAST_##enum_type); ++var)
+
 enum class MotionType {
     FIRST_MOTION_TYPE,
     STANDING = FIRST_MOTION_TYPE,

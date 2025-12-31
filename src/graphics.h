@@ -11,7 +11,7 @@ class Graphics {
         ~Graphics();
 
         void renderTexture(SDL_Texture* src, SDL_Rect* src_rect, SDL_Rect* dst_rect);
-        SDL_Texture* loadImage(const std::string& file_path, bool black_is_transparent = false);
+        SDL_Texture* loadImage(const std::string& file_name, bool black_is_transparent = false);
         void clear();
         void flip();
 

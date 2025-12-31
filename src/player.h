@@ -10,6 +10,8 @@
 #include "number_sprite.h"
 #include "varying_width_sprite.h"
 #include "timer.h"
+#include "damage_text.h"
+#include "polar_star.h"
 
 class Graphics;
 class Map;
@@ -21,7 +23,7 @@ class Player{
         void update(units::MS elapsed_time_ms, const Map& map);
         void updateX(units::MS elapsed_time_ms, const Map& map);
         void updateY(units::MS elapsed_time_ms, const Map& map);
-        void draw(Graphics& graphics) const;
+        void draw(Graphics& graphics);
         void drawHUD(Graphics& graphics);
 
         void startMovingLeft();
@@ -34,23 +36,44 @@ class Player{
 
         void startJump();
         void stopJump();
-        void takeDamage();
+        void takeDamage(units::HP damage);
 
         Rectangle damageRectangle() const;
         units::Game center_x() const { return x_ + units::kHalfTile; }
+        units::Game center_y() const { return y_ + units::kHalfTile; }
+
 
     private:
-        struct SpriteState {
-            MotionType motion_type;
-            HorizontalFacing horizontal_facing;
-            VerticalFacing vertical_facing;
-
-            SpriteState(MotionType motion_type = MotionType::STANDING, 
-                    HorizontalFacing horizontal_facing = HorizontalFacing::LEFT,
-                    VerticalFacing vertical_facing = VerticalFacing::HORIZONTAL);
-            
-            bool operator<(const SpriteState& other) const;
+        enum class StrideType {
+            FIRST_STRIDE_TYPE,
+            MIDDLE = FIRST_STRIDE_TYPE,
+            LEFT,
+            RIGHT,
+            LAST_STRIDE_TYPE
         };
+        using SpriteTuple = std::tuple<MotionType, HorizontalFacing, VerticalFacing, StrideType>;
+        struct SpriteState : public SpriteTuple{
+            MotionType motion_type() const { return std::get<0>(*this); }
+            HorizontalFacing horizontal_facing() const { return std::get<1>(*this); }
+            VerticalFacing vertical_facing() const { return std::get<2>(*this); }
+            StrideType strideType() const { return get<3>(*this); }
+
+            SpriteState(const SpriteTuple& tuple) : SpriteTuple{tuple} {}     
+            SpriteState(SpriteTuple&& tuple) : SpriteTuple{std::move(tuple)}{}       
+        };
+
+        struct WalkingAnimation{
+            WalkingAnimation();
+
+            void update();
+            void reset();
+
+            StrideType stride() const;
+            private:
+                Timer frame_timer_;
+                int cur_index_;
+                bool forward_;
+        }; 
 
         struct Health {
             Health(Graphics& graphics);
@@ -82,7 +105,12 @@ class Player{
         Rectangle topCollision(units::Game delta) const;
 
         bool spriteIsVisible() const;
-        bool onGround() const{ return on_ground_; }
+        MotionType motionType() const;
+        VerticalFacing vertical_facing() const 
+            { return on_ground_ && intended_vertical_facing_ 
+                    == VerticalFacing::DOWN ?
+                    VerticalFacing::HORIZONTAL :
+                    intended_vertical_facing_; }
 
         units::Game x_, y_;
         units::Velocity velocity_x_, velocity_y_;
@@ -93,9 +121,12 @@ class Player{
 
         Health health_;
         Timer invincible_timer_;
+        DamageText damage_text_;
+        WalkingAnimation walking_animation_;
+        PolarStar polar_star_;
 
         HorizontalFacing horizontal_facing_;
-        VerticalFacing vertical_facing_;
+        VerticalFacing intended_vertical_facing_;
 
         std::map<SpriteState, std::unique_ptr<Sprite>> sprites_;
 };

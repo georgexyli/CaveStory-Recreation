@@ -20,14 +20,13 @@ class FirstCaveBat{
                 { return Rectangle{x_ + units::kHalfTile,
                         y_ + units::kHalfTile, 0, 0}; }
 
+        units::HP contactDamage() const; 
     private:
-        struct SpriteState{
-            SpriteState(HorizontalFacing facing) : facing{facing}{}
-            HorizontalFacing facing;
-
-            bool operator<(const SpriteState& other) const{
-                return facing < other.facing;
-            }
+        using SpriteTuple = std::tuple<HorizontalFacing>;
+        struct SpriteState : public SpriteTuple{
+            SpriteState(const SpriteTuple& tuple) : SpriteTuple{tuple}{}
+            SpriteState(SpriteTuple&& tuple) : SpriteTuple{std::move(tuple)}{}
+            HorizontalFacing facing() const { return std::get<0>(*this); };
         };
 
         void initializeSprites(Graphics& graphics);

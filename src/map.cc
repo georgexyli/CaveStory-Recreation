@@ -4,8 +4,8 @@
 #include "rectangle.h"
 
 namespace{
-const std::string kCaveFile{"content/PrtCave.pbm"};
-const std::string kBackdropFile{"content/bkBlue.pbm"};
+const std::string kCaveFile{"PrtCave"};
+const std::string kBackdropFile{"bkBlue"};
 }
 
 Map* Map::createTestMap(Graphics& graphics){
@@ -20,13 +20,13 @@ Map* Map::createTestMap(Graphics& graphics){
     map -> tiles_ = std::vector<std::vector<Tile>>(num_rows,
             std::vector<Tile>(num_cols, Tile()));
 
-    auto sprite = std::make_shared<Sprite>(
+    auto sprite{std::make_shared<Sprite>(
             graphics,
             kCaveFile, 
             units::tileToPixel(1), 
             units::tileToPixel(0), 
             units::tileToPixel(1),
-            units::tileToPixel(1)); 
+            units::tileToPixel(1))}; 
     
     const units::Tile row {11};
     Tile tile{TileType::WALL_TILE, sprite};
@@ -39,30 +39,30 @@ Map* Map::createTestMap(Graphics& graphics){
     map -> tiles_[10][3] = tile;
     map -> tiles_[7][2] = tile;
 
-    auto chain_top = std::make_shared<Sprite>(
+    auto chain_top{std::make_shared<Sprite>(
             graphics,
             kCaveFile, 
             units::tileToPixel(11), 
             units::tileToPixel(2), 
             units::tileToPixel(1), 
-            units::tileToPixel(1)); 
+            units::tileToPixel(1))}; 
 
-    auto chain_middle = std::make_shared<Sprite>(
+    auto chain_middle{std::make_shared<Sprite>(
             graphics,
             kCaveFile, 
             units::tileToPixel(12), 
             units::tileToPixel(2), 
             units::tileToPixel(1), 
-            units::tileToPixel(1)); 
+            units::tileToPixel(1))}; 
 
 
-    auto chain_bottom = std::make_shared<Sprite>(
+    auto chain_bottom{std::make_shared<Sprite>(
             graphics,
             kCaveFile, 
             units::tileToPixel(13), 
             units::tileToPixel(2), 
             units::tileToPixel(1), 
-            units::tileToPixel(1)); 
+            units::tileToPixel(1))}; 
 
     map -> background_tiles_[8][2] = chain_top;
     map -> background_tiles_[9][2] = chain_middle;
@@ -71,10 +71,10 @@ Map* Map::createTestMap(Graphics& graphics){
 }
 
 std::vector<Map::CollisionTile> Map::getCollidingTiles(const Rectangle& rectangle) const {
-    const units::Tile first_row = units::gameToTile(rectangle.top());
-    const units::Tile last_row = units::gameToTile(rectangle.bottom());
-    const units::Tile first_col = units::gameToTile(rectangle.left());
-    const units::Tile last_col = units::gameToTile(rectangle.right());
+    const units::Tile first_row{units::gameToTile(rectangle.top())};
+    const units::Tile last_row{units::gameToTile(rectangle.bottom())};
+    const units::Tile first_col{units::gameToTile(rectangle.left())};
+    const units::Tile last_col{units::gameToTile(rectangle.right())};
 
     std::vector<CollisionTile> collisionTiles;
 
