@@ -12,17 +12,20 @@
 #include "timer.h"
 #include "damage_text.h"
 #include "polar_star.h"
+#include "damageable.h"
+#include "gun_experience_hud.h"
 
 class Graphics;
 class Map;
+struct ParticleTools;
 
-class Player{
+class Player : public Damageable{
     public:
         Player(units::Game x, units::Game y, Graphics& Graphics);
 
-        void update(units::MS elapsed_time_ms, const Map& map);
+        void update(units::MS elapsed_time_ms, const Map& map, ParticleTools& particle_tools);
         void updateX(units::MS elapsed_time_ms, const Map& map);
-        void updateY(units::MS elapsed_time_ms, const Map& map);
+        void updateY(units::MS elapsed_time_ms, const Map& map, ParticleTools& particle_tools);
         void draw(Graphics& graphics);
         void drawHUD(Graphics& graphics);
 
@@ -37,7 +40,7 @@ class Player{
         void startJump();
         void stopJump();
 
-        void startFire();
+        void startFire(ParticleTools& particle_tools);
         void stopFire();
 
         void takeDamage(units::HP damage);
@@ -45,8 +48,11 @@ class Player{
         Rectangle damageRectangle() const;
         units::Game center_x() const { return x_ + units::kHalfTile; }
         units::Game center_y() const { return y_ + units::kHalfTile; }
+        std::shared_ptr<DamageText> get_damage_text() const { return damage_text_; }
 
-
+        std::vector<std::shared_ptr<Projectile>> getProjectiles(){
+            return polar_star_.getProjectiles();
+        }
     private:
         enum class StrideType {
             FIRST_STRIDE_TYPE,
@@ -128,14 +134,17 @@ class Player{
 
         Health health_;
         Timer invincible_timer_;
-        DamageText damage_text_;
+        std::shared_ptr<DamageText> damage_text_;
         WalkingAnimation walking_animation_;
+
+        GunExperienceHUD gun_experience_hud_;
         PolarStar polar_star_;
 
         HorizontalFacing horizontal_facing_;
         VerticalFacing intended_vertical_facing_;
 
         std::map<SpriteState, std::unique_ptr<Sprite>> sprites_;
+        
 };
 
 #endif

@@ -2,126 +2,169 @@
 
 #include <SDL.h>
 
+#include "first_cave_bat.h"
 #include "graphics.h"
-#include "player.h"
 #include "input.h"
 #include "map.h"
-#include "first_cave_bat.h"
+#include "player.h"
 #include "timer.h"
+
+#include "death_cloud_particle.h"
 
 namespace {
 const units::FPS kFps{60};
 const units::MS kMaxFrameTime{5 * 1000 / 60};
-};  
+}; // namespace
 
 const units::Tile Game::kScreenWidth{20};
 const units::Tile Game::kScreenHeight{15};
 
 Game::Game() {
-    SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_ShowCursor(SDL_DISABLE);
-    eventLoop();
+  SDL_Init(SDL_INIT_EVERYTHING);
+  SDL_ShowCursor(SDL_DISABLE);
+  eventLoop();
 }
 
 Game::~Game() { SDL_Quit(); }
 
 void Game::eventLoop() {
-    Graphics graphics;
-    SDL_Event event;
-    Input input;
+  Graphics graphics;
+  SDL_Event event;
+  Input input;
 
-    player_ = std::make_unique<Player>(units::tileToGame(kScreenWidth/2), units::tileToGame(kScreenHeight/2), graphics);
-    bat_ = std::make_unique<FirstCaveBat>(units::tileToGame(5), units::tileToGame(kScreenHeight/2), graphics);
-    map_.reset(Map::createTestMap(graphics));
+  player_ =
+      std::make_shared<Player>(units::tileToGame(kScreenWidth / 2),
+                               units::tileToGame(kScreenHeight / 2), graphics);
+  bat_ = std::make_shared<FirstCaveBat>(
+      units::tileToGame(5), units::tileToGame(kScreenHeight / 2), graphics);
 
-    bool running{true};
-    units::TimePoint last_update_time{std::chrono::steady_clock::now()};
+  map_.reset(Map::createTestMap(graphics));
 
-    while (running) {
-        const units::TimePoint start_time_ms{std::chrono::steady_clock::now()};
-        
-        input.beginNewFrame();
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_KEYDOWN:
-                    input.keyDownEvent(event);
-                    break;
-                case SDL_KEYUP:
-                    input.keyUpEvent(event);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        if (input.wasKeyPressed(SDL_SCANCODE_ESCAPE)) running = false;
-
-        if (input.isKeyHeld(SDL_SCANCODE_LEFT) && input.isKeyHeld(SDL_SCANCODE_RIGHT)){
-            player_ -> stopMoving();
-        } else if (input.isKeyHeld(SDL_SCANCODE_LEFT)){
-            player_ -> startMovingLeft();
-        } else if (input.isKeyHeld(SDL_SCANCODE_RIGHT)){
-            player_ -> startMovingRight();
-        } else {
-            player_ -> stopMoving();
-        }
-
-        if (input.isKeyHeld(SDL_SCANCODE_UP) && input.isKeyHeld(SDL_SCANCODE_DOWN)){
-            player_ -> lookHorizontal();
-        } else if (input.isKeyHeld(SDL_SCANCODE_UP)){
-            player_ -> lookUp();
-        } else if (input.isKeyHeld(SDL_SCANCODE_DOWN)){
-            player_ -> lookDown();
-        } else {
-            player_ -> lookHorizontal();
-        }
-
-        if (input.wasKeyPressed(SDL_SCANCODE_Z)){
-            player_ -> startJump();
-        } else if (input.wasKeyReleased(SDL_SCANCODE_Z)){
-            player_ -> stopJump();
-        }
-
-        if (input.wasKeyPressed(SDL_SCANCODE_X)){
-            player_ -> startFire();
-        } else if (input.wasKeyReleased(SDL_SCANCODE_X)){
-            player_ -> stopFire();
-        }
+  damage_texts_.addDamageable(player_);
+  damage_texts_.addDamageable(bat_);
 
 
-        const units::TimePoint cur_time_ms{std::chrono::steady_clock::now()};
-        const units::MS elapsed_time{std::min(kMaxFrameTime, std::chrono::duration_cast<units::MS>(cur_time_ms - last_update_time))};
-        update(elapsed_time);
-        last_update_time = cur_time_ms;
+  bool running{true};
+  units::TimePoint last_update_time{std::chrono::steady_clock::now()};
+  while (running) {
+    const units::TimePoint start_time_ms{std::chrono::steady_clock::now()};
 
-        draw(graphics);
-        const units::MS elapsed_time_ms{std::chrono::duration_cast<units::MS>(std::chrono::steady_clock::now() - start_time_ms)};
-        const units::MS ms_per_frame {1000/kFps};
-        if (elapsed_time_ms < ms_per_frame) {
-            const units::MS frame_time = ms_per_frame - elapsed_time_ms;
-            SDL_Delay(static_cast<Uint32>(frame_time.count()));
-        }
+    input.beginNewFrame();
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+      case SDL_KEYDOWN:
+        input.keyDownEvent(event);
+        break;
+      case SDL_KEYUP:
+        input.keyUpEvent(event);
+        break;
+      default:
+        break;
+      }
     }
+
+    if (input.wasKeyPressed(SDL_SCANCODE_ESCAPE))
+      running = false;
+
+    if (input.isKeyHeld(SDL_SCANCODE_LEFT) &&
+        input.isKeyHeld(SDL_SCANCODE_RIGHT)) {
+      player_->stopMoving();
+    } else if (input.isKeyHeld(SDL_SCANCODE_LEFT)) {
+      player_->startMovingLeft();
+    } else if (input.isKeyHeld(SDL_SCANCODE_RIGHT)) {
+      player_->startMovingRight();
+    } else {
+      player_->stopMoving();
+    }
+
+    if (input.isKeyHeld(SDL_SCANCODE_UP) &&
+        input.isKeyHeld(SDL_SCANCODE_DOWN)) {
+      player_->lookHorizontal();
+    } else if (input.isKeyHeld(SDL_SCANCODE_UP)) {
+      player_->lookUp();
+    } else if (input.isKeyHeld(SDL_SCANCODE_DOWN)) {
+      player_->lookDown();
+    } else {
+      player_->lookHorizontal();
+    }
+
+    if (input.wasKeyPressed(SDL_SCANCODE_Z)) {
+      player_->startJump();
+    } else if (input.wasKeyReleased(SDL_SCANCODE_Z)) {
+      player_->stopJump();
+    }
+
+    if (input.wasKeyPressed(SDL_SCANCODE_X)) {
+      ParticleTools particle_tools{front_particle_system_,
+                                   entity_particle_system_, graphics};
+      player_->startFire(particle_tools);
+    } else if (input.wasKeyReleased(SDL_SCANCODE_X)) {
+      player_->stopFire();
+    }
+
+    const units::TimePoint cur_time_ms{std::chrono::steady_clock::now()};
+    const units::MS elapsed_time{std::min(
+        kMaxFrameTime,
+        std::chrono::duration_cast<units::MS>(cur_time_ms - last_update_time))};
+    update(elapsed_time, graphics);
+    last_update_time = cur_time_ms;
+
+    draw(graphics);
+    const units::MS elapsed_time_ms{std::chrono::duration_cast<units::MS>(
+        std::chrono::steady_clock::now() - start_time_ms)};
+    const units::MS ms_per_frame{1000 / kFps};
+    if (elapsed_time_ms < ms_per_frame) {
+      const units::MS frame_time = ms_per_frame - elapsed_time_ms;
+      SDL_Delay(static_cast<Uint32>(frame_time.count()));
+    }
+  }
 }
 
-void Game::update(units::MS elapsed_time_ms) {
-    Timer::updateAll(elapsed_time_ms);
+void Game::update(units::MS elapsed_time_ms, Graphics &graphics) {
+  Timer::updateAll(elapsed_time_ms);
+  damage_texts_.update(elapsed_time_ms);
+  front_particle_system_.update(elapsed_time_ms);
+  entity_particle_system_.update(elapsed_time_ms);
 
-    player_ -> update(elapsed_time_ms, *map_);
-    bat_ -> update(elapsed_time_ms, player_ -> center_x());
-    if (bat_ -> damageRectangle().collidesWidth(player_ -> damageRectangle())){
-        player_ -> takeDamage(bat_ -> contactDamage());
+  ParticleTools particle_tools{front_particle_system_, entity_particle_system_,
+                               graphics};
+  player_->update(elapsed_time_ms, *map_, particle_tools);
+  if (bat_) {
+    if (!bat_->update(elapsed_time_ms, player_->center_x())) {
+      DeathCloudParticle::createRandomDeathClouds(
+          particle_tools, bat_->center_x(), bat_->center_y(), 3);
+      bat_.reset();
     }
+  }
+  std::vector<std::shared_ptr<Projectile>> projectiles{
+      player_->getProjectiles()};
+
+  for (const auto &projectile : projectiles) {
+    if (bat_ && bat_->collisionRectangle().collidesWidth(
+                    projectile->collisionRectangle())) {
+      bat_->takeDamage(projectile->contactDamage());
+      projectile->collideWithEnemy();
+    }
+  }
+
+  if (bat_ &&
+      bat_->damageRectangle().collidesWidth(player_->damageRectangle())) {
+    player_->takeDamage(bat_->contactDamage());
+  }
 }
 
-void Game::draw(Graphics& graphics) const{
-    graphics.clear();
+void Game::draw(Graphics &graphics) {
+  graphics.clear();
+  map_->drawBackground(graphics);
+  if (bat_)
+    bat_->draw(graphics);
+  entity_particle_system_.draw(graphics);
+  player_->draw(graphics);
+  map_->draw(graphics);
+  front_particle_system_.draw(graphics);
 
-    map_ -> drawBackground(graphics);
-    bat_ -> draw(graphics);
-    player_ -> draw(graphics);
-    map_ -> draw(graphics);
-    player_ -> drawHUD(graphics);
+  damage_texts_.draw(graphics);
+  player_->drawHUD(graphics);
 
-    graphics.flip();
+  graphics.flip();
 }

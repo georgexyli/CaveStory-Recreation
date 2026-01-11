@@ -6,8 +6,8 @@
 
 class Timer {
     public:
-        Timer(units::MS expiration_time) : 
-                current_time_{expiration_time},
+        Timer(units::MS expiration_time, bool start_active = false) : 
+                current_time_{start_active ? units::MS{0} : expiration_time},
                 expiration_time_{expiration_time}{ timers_.insert(this); }
         ~Timer(){ timers_.erase(this); }
 

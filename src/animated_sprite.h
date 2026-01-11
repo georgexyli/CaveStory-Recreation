@@ -13,8 +13,10 @@ class AnimatedSprite : public Sprite {
 
                 
         void update() override;
+        int num_completed_loops() const { return num_completed_loops_; }
 
     private:
+        int num_completed_loops_;
         const units::Frame num_frames_;
         units::Frame cur_frame_;
         Timer frame_timer_;

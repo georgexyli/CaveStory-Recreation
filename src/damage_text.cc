@@ -7,21 +7,38 @@ const units::MS kDamageTime{2000};
 } 
 
 
-DamageText::DamageText() : offset_y_{0}, damage_{0}, timer_{kDamageTime} 
+DamageText::DamageText() : offset_y_{0}, 
+damage_{0}, 
+timer_{kDamageTime},
+should_rise_{true}, 
+center_x_{0}, center_y_{0}
 {}
 
 void DamageText::setDamage(units::HP damage) {
-    damage_ = damage;
-    offset_y_ = 0;
+    should_rise_ = damage_ == 0; 
+    if (should_rise_){
+        offset_y_ = 0;
+    }
+    damage_ += damage;
     timer_.reset();
 }
 
-void DamageText::update(units::MS elapsed_time){
-    if (timer_.expired()) return;
-    offset_y_ = std::max(- units::tileToGame(1), offset_y_ + kVelocity * elapsed_time.count());  
+bool DamageText::update(units::MS elapsed_time){
+    if (timer_.expired()) {
+        damage_ = 0;
+    }
+    if (should_rise_) {
+        offset_y_ = std::max(- units::tileToGame(1), offset_y_ + kVelocity * elapsed_time.count());  
+    }
+    return !timer_.expired();
 }
 
-void DamageText::draw(Graphics& graphics, units::Game center_x, units::Game center_y) const {
+void DamageText::setPosition(units::Game center_x, units::Game center_y){
+    center_x_ = center_x;
+    center_y_ = center_y;
+}
+
+void DamageText::draw(Graphics& graphics) const {
     if (timer_.expired()) return;
-    NumberSprite::DamageNumber(graphics, damage_).drawCentered(graphics, center_x, center_y + offset_y_); 
+    NumberSprite::DamageNumber(graphics, damage_).drawCentered(graphics, center_x_, center_y_ + offset_y_); 
 }

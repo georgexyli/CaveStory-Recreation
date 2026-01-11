@@ -9,7 +9,8 @@ AnimatedSprite::AnimatedSprite(Graphics& graphics, const std::string& file_path,
         width, height},
         frame_timer_{units::MS{1000 / fps}},
         num_frames_{num_frames},
-        cur_frame_{0}
+        cur_frame_{0},
+        num_completed_loops_{0}
 {
 }
 
@@ -22,6 +23,7 @@ void AnimatedSprite::update() {
         } else {
             src_rect_.x -= (num_frames_-1) * src_rect_.w;
             cur_frame_ = 0;
+            ++num_completed_loops_;
         }
     }
 }

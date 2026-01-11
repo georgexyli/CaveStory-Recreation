@@ -9,6 +9,10 @@
 namespace units{
 
 using HP = int;
+using GunLevel = unsigned int;
+inline constexpr GunLevel kMaxGunLevel{3};
+
+using GunExperience = int;
 
 using Game = float; // Float for extra precision, intrinsic units of position
 using Pixel = int; // Integer for discrete units. Pixel units can be +/-
@@ -37,11 +41,11 @@ inline constexpr Pixel gameToPixel(Game game){
 }
 
 inline constexpr Tile gameToTile(Game game){
-    return Tile(game / kTileSize);
+    return static_cast<Tile>(game / kTileSize);
 }
 
 inline constexpr Game tileToGame(Tile tile){
-    return Game(tile * kTileSize);
+    return static_cast<Game>(tile * kTileSize);
 }
 
 inline constexpr Pixel tileToPixel(Tile tile){
@@ -50,6 +54,14 @@ inline constexpr Pixel tileToPixel(Tile tile){
 
 inline double degreesToRadians(Degrees degrees){
     return degrees * kPi / 180.0f;
+}
+
+inline Game sin(Degrees degrees) {
+    return static_cast<Game>(std::sin(degreesToRadians(degrees)));
+}
+
+inline Game cos(Degrees degrees) {
+    return static_cast<Game>(std::cos(degreesToRadians(degrees)));
 }
 
 inline constexpr Game kHalfTile{tileToGame(1) / 2.0f};

@@ -47,12 +47,14 @@ Player::Health::Health(Graphics& graphics) :
                 units::gameToPixel(kHealthFillSourceX),
                 units::gameToPixel(kHealthFillSourceY),
                 units::gameToPixel(kMaxFillWidth),
+                units::gameToPixel(kMaxFillWidth),
                 units::gameToPixel(kHealthFillSourceHeight)},
         damage_fill_sprite_{
                 graphics,
                 kHealthFile,
                 units::gameToPixel(kHealthDamageSourceX),
                 units::gameToPixel(kHealthDamageSourceY),
+                units::gameToPixel(kMaxFillWidth),
                 units::gameToPixel(0),
                 units::gameToPixel(kHealthDamageSourceHeight)}
 {
@@ -67,11 +69,12 @@ void Player::Health::update(units::MS elapsed_time){
 
 void Player::Health::draw(Graphics& graphics) {
     health_bar_sprite_.draw(graphics, kHealthBarX, kHealthBarY);
-    health_fill_sprite_.draw(graphics, kHealthFillX, kHealthFillY);
 
     if (damage_ > 0){
-        damage_fill_sprite_.draw(graphics, kHealthFillX + fillOffset(current_health_ - damage_), kHealthFillY);
+        damage_fill_sprite_.draw(graphics, kHealthFillSourceWidth, kHealthFillY);
     }
+
+    health_fill_sprite_.draw(graphics, kHealthFillSourceWidth, kHealthFillY);
 
     NumberSprite::HUDNumber(graphics, current_health_, kHealthNumberDigits).
             draw(graphics, kHealthNumberX, kHealthNumberY);
@@ -80,11 +83,7 @@ void Player::Health::draw(Graphics& graphics) {
 bool Player::Health::takeDamage(units::HP damage){
     damage_ = damage;
     damage_timer_.reset();
-    health_fill_sprite_.set_width(units::gameToPixel(fillOffset(current_health_ - damage)));
-    damage_fill_sprite_.set_width(units::gameToPixel(fillOffset(damage_)));
+    health_fill_sprite_.set_percentage_width(static_cast<units::Game>(current_health_ - damage) / max_health_);
+    damage_fill_sprite_.set_percentage_width(static_cast<units::Game>(current_health_) / max_health_);
     return false;
-}
-
-units::Game Player::Health::fillOffset(units::HP health) const {
-    return kMaxFillWidth * health / max_health_;
 }
